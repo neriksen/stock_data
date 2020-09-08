@@ -7,7 +7,7 @@ import _pickle as cPickle
 import pandas as pd
 
 
-def download_tickers(tickers, force_update):
+def download_tickers(tickers, force_update, **kwargs):
     # Fetch downloaded ticker from raw_data
     downloaded_tickers = [x[0:-5] if '.pbz2' in x else '' for x in os.listdir('raw_data/')]
     downloaded_tickers.remove('')
@@ -20,22 +20,30 @@ def download_tickers(tickers, force_update):
     tickers_to_load = [x for x in tickers if x not in not_downloaded]
     
     # Read stock data from file(s)
-    return load_stocks(tickers_to_load)
+    return load_stocks(tickers_to_load, **kwargs)
 
 
-def load_stocks(tickers):
-    cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
-    index = pd.MultiIndex.from_product([tickers, cols], names=['Stock ticker', 'Data type'])
+def load_stocks(tickers, **kwargs):
+
     if len(tickers) > 1:
         data = pd.concat([decompress_pickle('raw_data/' + x + '.pbz2') for x in tickers], axis=1, sort=True)
     else:
         data = decompress_pickle('raw_data/' + tickers[0] + '.pbz2')
     
+    if 'return_only' in kwargs:
+        data = data[kwargs['return_only']]
+        cols = kwargs['return_only']
+    else:
+        cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+        
+    index = pd.MultiIndex.from_product([tickers, cols], names=['Stock ticker', 'Data type'])
     data.columns = index
+    
     try:
         data.index = pd.to_datetime(data.index, unit='ms')
     except ValueError:
         data.index = pd.to_datetime(data.index)
+        
     return data
 
 
