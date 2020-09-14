@@ -9,7 +9,7 @@ import pandas as pd
 
 def download_tickers(tickers, force_update, **kwargs):
     # Fetch downloaded ticker from raw_data
-    downloaded_tickers = [x[0:-5] if '.pbz2' in x else '' for x in os.listdir('raw_data/')]
+    downloaded_tickers = [x[0:-5] if '.pbz2' in x else '' for x in os.listdir('/Users/nielseriksen/stock_data/raw_data/')]
     downloaded_tickers.remove('')
     # Check if tickers already are downloaded
     tickers_to_download = []
@@ -26,9 +26,9 @@ def download_tickers(tickers, force_update, **kwargs):
 def load_stocks(tickers, **kwargs):
 
     if len(tickers) > 1:
-        data = pd.concat([decompress_pickle('raw_data/' + x + '.pbz2') for x in tickers], axis=1, sort=True)
+        data = pd.concat([decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + x + '.pbz2') for x in tickers], axis=1, sort=True)
     else:
-        data = decompress_pickle('raw_data/' + tickers[0] + '.pbz2')
+        data = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + tickers[0] + '.pbz2')
     
     if 'return_only' in kwargs:
         data = data[kwargs['return_only']]
@@ -48,10 +48,10 @@ def load_stocks(tickers, **kwargs):
 
 
 def update_ticker(ticker):
-    date_modified = dt.datetime.fromtimestamp(os.path.getmtime('raw_data/' + ticker + '.pbz2')).date()
+    date_modified = dt.datetime.fromtimestamp(os.path.getmtime('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')).date()
     if date_modified != dt.date.today():  # In case stock has not been downloaded today
         last_bday = last_weekday()
-        newest_date = decompress_pickle('raw_data/' + ticker + '.pbz2').index[-1]
+        newest_date = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2').index[-1]
         if newest_date == float:
             newest_date = dt.datetime.fromtimestamp(newest_date/1000)
         newest_date = newest_date.date()
@@ -98,7 +98,7 @@ def clean_df(df):
 
 def compressed_pickle(ticker, data):
     ticker = ticker[0] if isinstance(ticker, list) else ticker
-    with bz2.BZ2File('raw_data/' + ticker + '.pbz2', 'w') as f: 
+    with bz2.BZ2File('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2', 'w') as f:
         cPickle.dump(data, f)
         
         
@@ -110,12 +110,12 @@ def decompress_pickle(file):
 
 
 def clean_raw_files():
-    for filename in os.listdir('raw_data'):
+    for filename in os.listdir('/Users/nielseriksen/stock_data/raw_data'):
         if filename.endswith(".pbz2"): 
-            df = pd.DataFrame(decompress_pickle('raw_data/' + filename))
+            df = pd.DataFrame(decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + filename))
             non_zeroes = len(df) - df.iloc[:, 4].isna().sum()
             if non_zeroes < 2:
-                os.remove('raw_data/' + filename)
+                os.remove('/Users/nielseriksen/stock_data/raw_data/' + filename)
             else:
                 df = df.dropna(how='all', axis=0)
                 ticker = filename.replace('.pbz2', '')

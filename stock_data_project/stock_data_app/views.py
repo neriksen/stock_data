@@ -1,9 +1,15 @@
 from django.shortcuts import render
-from django.http import HttpResponse
-import os
+from .forms import PickStockForm
+from .graph_utils import create_graph_html
 
 def home(request):
-    downloaded_tickers = [x[0:-5] if '.pbz2' in x else '' for x in os.listdir('/Users/nielseriksen/stock_data/raw_data')]
-    downloaded_tickers = {'name': downloaded_tickers[i] for i in range(0, len(downloaded_tickers))}
 
-    return render(request, 'stock_data_app/stock_data-graph.html', context=downloaded_tickers)
+    if request.method == 'POST':
+        form = PickStockForm(request.POST)
+        if form.is_valid():
+            stocks = form.cleaned_data['stocks']
+            html =  create_graph_html(stocks)
+            return render(request, 'stock_data_app/stock_data-graph.html', context={'form': form, 'graph': html})
+
+    form = PickStockForm()
+    return render(request, 'stock_data_app/stock_data-graph.html', context={'form': form})
