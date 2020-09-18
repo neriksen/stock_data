@@ -51,7 +51,10 @@ def update_ticker(ticker):
     date_modified = dt.datetime.fromtimestamp(os.path.getmtime('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')).date()
     if date_modified != dt.date.today():  # In case stock has not been downloaded today
         last_bday = last_weekday()
-        newest_date = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2').index[-1]
+        newest_date = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')
+        if newest_date is None:
+            return False
+        newest_date = newest_date.index[-1]
         if newest_date == float:
             newest_date = dt.datetime.fromtimestamp(newest_date/1000)
         newest_date = newest_date.date()
@@ -60,6 +63,10 @@ def update_ticker(ticker):
         else:
             return False
     return False
+
+
+def newest_date(ticker):
+
 
 
 def download_dump(tickers):
@@ -105,6 +112,8 @@ def compressed_pickle(ticker, data):
 def decompress_pickle(file):
     data = bz2.BZ2File(file, 'rb')
     data = cPickle.load(data)
+    if len(data) < 2:
+        return None
     return data
 
 
@@ -113,7 +122,10 @@ def clean_raw_files():
     for filename in os.listdir('/Users/nielseriksen/stock_data/raw_data'):
         if filename.endswith(".pbz2"): 
             df = pd.DataFrame(decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + filename))
-            non_zeroes = len(df) - df.iloc[:, 4].isna().sum()
+            try:
+                non_zeroes = len(df) - df.iloc[:, 4].isna().sum()
+            except IndexError:
+                non_zeroes = 0
             if non_zeroes < 2:
                 os.remove('/Users/nielseriksen/stock_data/raw_data/' + filename)
             else:
