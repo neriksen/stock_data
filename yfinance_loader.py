@@ -47,25 +47,31 @@ def load_stocks(tickers, **kwargs):
     return data
 
 
+def newest_date(ticker):
+    stock_data = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')
+    if len(stock_data) < 2:     # Case bad data
+        return 'Error'
+    date = stock_data.index[-1]
+    if date == float:
+        date = dt.datetime.fromtimestamp(date / 1000)
+    date = date.date()
+    return date
+
+
 def update_ticker(ticker):
     date_modified = dt.datetime.fromtimestamp(os.path.getmtime('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')).date()
     if date_modified != dt.date.today():  # In case stock has not been downloaded today
         last_bday = last_weekday()
-        newest_date = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')
-        if newest_date is None:
+        newest_date = newest_date(ticker)
+        if newest_date == 'Error':
             return False
-        newest_date = newest_date.index[-1]
-        if newest_date == float:
-            newest_date = dt.datetime.fromtimestamp(newest_date/1000)
-        newest_date = newest_date.date()
         if newest_date != last_bday:
             return True 
-        else:
-            return False
+        return False
     return False
 
 
-def newest_date(ticker):
+
 
 
 
@@ -111,11 +117,7 @@ def compressed_pickle(ticker, data):
         
 def decompress_pickle(file):
     data = bz2.BZ2File(file, 'rb')
-    data = cPickle.load(data)
-    if len(data) < 2:
-        return None
-    return data
-
+    return cPickle.load(data)
 
 
 def clean_raw_files():

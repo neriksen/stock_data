@@ -41,13 +41,13 @@ def portfolio_value(endowment, weights, prices):
     return value
 
 
-yfl.clean_raw_files()
+#yfl.clean_raw_files()
 
-tickers = pd.read_csv('ticker_lists/swedish_first_north.csv', header=None)
-tickers = tickers[0].to_list()
-tickers = [x.replace(' ', '-') + '.ST' for x in tickers]
-print(tickers)
-#tickers = ['HD', 'AAPL', 'SAS.ST', 'NOVO-B.CO', 'SSL', 'RDS-B']
+#tickers = pd.read_csv('ticker_lists/swedish_first_north.csv', header=None)
+#tickers = tickers[0].to_list()
+#tickers = [x.replace(' ', '-') + '.ST' for x in tickers]
+#print(tickers)
+tickers = ['HD', 'AAPL', 'SAS.ST', 'NOVO-B.CO', 'SSL', 'RDS-B']
 prices = yfl.download_tickers(tickers, False, return_only=['Adj Close']).dropna()
 returns = get_returns(prices)
 

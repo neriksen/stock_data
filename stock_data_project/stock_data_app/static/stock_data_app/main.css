@@ -1,12 +1,8 @@
 body {
-  background: black;
-  color: #dddddd;
+  background: white;
+  color: white;
   max-width: 800px;
   margin-right: auto;
   margin-left: auto;
   padding-top: 100px;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: #444444;
 }

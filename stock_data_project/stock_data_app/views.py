@@ -4,8 +4,8 @@ from .graph_utils import create_graph_html
 
 def home(request):
 
-    if request.method == 'POST':
-        form = PickStockForm(request.POST)
+    if request.method == 'GET':
+        form = PickStockForm(request.GET)
         if form.is_valid():
             stocks = form.cleaned_data['stocks']
             html =  create_graph_html(stocks)
