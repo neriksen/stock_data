@@ -2,20 +2,23 @@ import os
 import yfinance as yf
 import datetime as dt
 import bz2
-import pickle
 import _pickle as cPickle
 import pandas as pd
 
 
 def download_tickers(tickers, force_update, **kwargs):
-    # Fetch downloaded ticker from raw_data
-    downloaded_tickers = [x[0:-5] if '.pbz2' in x else '' for x in os.listdir('/Users/nielseriksen/stock_data/raw_data/')]
-    downloaded_tickers.remove('')
-    # Check if tickers already are downloaded
+    already_downloaded = local_tickers()
     tickers_to_download = []
-    for ticker in tickers:             # If already downloaded, check if they need updates
-        if ticker not in downloaded_tickers or force_update or update_ticker(ticker):
-            tickers_to_download.append(ticker)
+    if force_update:
+        tickers_to_download = tickers
+    else:
+        for ticker in tickers:             # If already downloaded, check if they need updates
+            if ticker in already_downloaded:
+                if ticker_needs_update(ticker):
+                    tickers_to_download.append(ticker)
+            else:
+                tickers_to_download.append(ticker)
+
     not_downloaded = download_dump(tickers_to_download)
     tickers_to_load = [x for x in tickers if x not in not_downloaded]
     
@@ -24,33 +27,59 @@ def download_tickers(tickers, force_update, **kwargs):
 
 
 def load_stocks(tickers, **kwargs):
-
     if len(tickers) > 1:
-        data = pd.concat([decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + x + '.pbz2') for x in tickers], axis=1, sort=True)
+        data = pd.concat([decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + x + '.pbz2') for x in tickers],
+                         axis=1, sort=True)
     else:
         data = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + tickers[0] + '.pbz2')
-    
+
     if 'return_only' in kwargs:
         data = data[kwargs['return_only']]
         cols = kwargs['return_only']
     else:
         cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
-        
+
     index = pd.MultiIndex.from_product([tickers, cols], names=['Stock ticker', 'Data type'])
     data.columns = index
-    
+
     try:
         data.index = pd.to_datetime(data.index, unit='ms')
     except ValueError:
         data.index = pd.to_datetime(data.index)
-        
+
     return data
 
 
-def newest_date(ticker):
+def local_tickers():
+    tickers = [x[0:-5] if '.pbz2' in x else '' for x in
+                          os.listdir('/Users/nielseriksen/stock_data/raw_data/')]
+    tickers.remove('')
+    return tickers
+
+
+def ticker_needs_update(ticker):
     stock_data = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')
-    if len(stock_data) < 2:     # Case bad data
-        return 'Error'
+
+    if bad_local_data(stock_data):
+        return False
+
+    date_modified = dt.datetime.fromtimestamp(
+        os.path.getmtime('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')).date()
+    if date_modified == dt.date.today():  # In case stock file has not been modified today
+        return False
+
+    if newest_date(stock_data) == last_weekday():
+        return False
+    return True
+
+
+def bad_local_data(stock_data):
+    if len(stock_data) < 2:
+        return True
+    return False
+
+
+def newest_date(stock_data):
     date = stock_data.index[-1]
     if date == float:
         date = dt.datetime.fromtimestamp(date / 1000)
@@ -58,41 +87,24 @@ def newest_date(ticker):
     return date
 
 
-def update_ticker(ticker):
-    date_modified = dt.datetime.fromtimestamp(os.path.getmtime('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')).date()
-    if date_modified != dt.date.today():  # In case stock has not been downloaded today
-        last_bday = last_weekday()
-        newest_date = newest_date(ticker)
-        if newest_date == 'Error':
-            return False
-        if newest_date != last_bday:
-            return True 
-        return False
-    return False
-
-
-
-
-
-
 def download_dump(tickers):
     not_downloaded = []
-    if tickers != []:
+    if tickers:
         data = yf.download(tickers, period='100y', group_by='tickers')
         if len(tickers) > 1:
             for ticker in tickers:
-                    clean_data = clean_df(data[ticker])
-                    if len(clean_data) > 1:
-                        compressed_pickle(ticker, clean_data)
-                    else:
-                        not_downloaded.extend(tickers)
+                clean_data = clean_df(data[ticker])
+                if not bad_local_data(clean_data):
+                    compressed_pickle(ticker, clean_data)
+                else:
+                    not_downloaded.extend([ticker])
         else:
             clean_data = clean_df(data)
-            if len(clean_data) > 1:
+            if not bad_local_data(clean_data):
                 compressed_pickle(tickers, clean_data)
             else:
-                not_downloaded.extend(tickers)
-                
+                not_downloaded.append(tickers)
+
     return not_downloaded 
 
 
@@ -117,7 +129,7 @@ def compressed_pickle(ticker, data):
         
 def decompress_pickle(file):
     data = bz2.BZ2File(file, 'rb')
-    return cPickle.load(data)
+    return pd.DataFrame(cPickle.load(data), dtype='object')
 
 
 def clean_raw_files():
