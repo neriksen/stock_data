@@ -4,6 +4,8 @@ import datetime as dt
 import bz2
 import _pickle as cPickle
 import pandas as pd
+import monthdelta
+import re
 
 
 def download_tickers(tickers, force_update, **kwargs):
@@ -19,11 +21,26 @@ def download_tickers(tickers, force_update, **kwargs):
             else:
                 tickers_to_download.append(ticker)
 
-    not_downloaded = download_dump(tickers_to_download)
+    not_downloaded = download_dump(tickers_to_download, **kwargs)
     tickers_to_load = [x for x in tickers if x not in not_downloaded]
     
     # Read stock data from file(s)
     return load_stocks(tickers_to_load, **kwargs)
+
+
+def min_date_check_multiple(stock_data, tickers, min_date):
+    good_tickers = []
+    for ticker in tickers:
+        data = clean_df(stock_data[ticker])
+        if min_date_check(data, min_date):
+            good_tickers.append(ticker)
+    return good_tickers
+
+
+def min_date_check(stock_data, min_date):
+    if stock_data.index[0] < min_date:
+        return True
+    return False
 
 
 def load_stocks(tickers, **kwargs):
@@ -46,6 +63,15 @@ def load_stocks(tickers, **kwargs):
         data.index = pd.to_datetime(data.index, unit='ms')
     except ValueError:
         data.index = pd.to_datetime(data.index)
+
+    tickers_to_keep = tickers
+    if 'min_period' in kwargs:
+        min_period = convert_period(kwargs['min_period'])
+        tickers_to_keep = min_date_check_multiple(data, tickers, min_period)
+
+    if not tickers_to_keep:
+        raise ValueError(f'Warning: No tickers found. No data found before {min_period}. Change to something less restrictive')
+    data = data[tickers_to_keep]
 
     return data
 
@@ -87,8 +113,9 @@ def newest_date(stock_data):
     return date
 
 
-def download_dump(tickers):
+def download_dump(tickers, **kwargs):
     not_downloaded = []
+    start_period = convert_period(kwargs['min_period']) if 'min_period' in kwargs else dt.date.today()
     if tickers:
         data = yf.download(tickers, period='100y', group_by='tickers')
         if len(tickers) > 1:
@@ -105,7 +132,9 @@ def download_dump(tickers):
             else:
                 not_downloaded.append(tickers)
 
-    return not_downloaded 
+    return not_downloaded
+
+
 
 
 def last_weekday():
@@ -130,6 +159,23 @@ def compressed_pickle(ticker, data):
 def decompress_pickle(file):
     data = bz2.BZ2File(file, 'rb')
     return pd.DataFrame(cPickle.load(data), dtype='object')
+
+
+def convert_period(date_string):
+    match = re.match(r"([0-9]+)([a-z]+)", date_string, re.I)
+    assert match, 'Period must begin with number and end with string, like 3d, 4mo and 10y'
+    items = match.groups()
+    number, period = int(items[0]), items[1]
+    assert period.upper() in ['D', 'MO', 'Y', 'YTD'], 'Period must be of form 10d, 2mo or 4y or ytd'
+    if period.upper() == 'D':
+        start_date = dt.date.today() + dt.timedelta(-number)
+    if period.upper() == 'MO':
+        start_date = dt.date.today() + monthdelta.monthdelta(-number)
+    if period.upper() == 'Y':
+        start_date = dt.date.today() + dt.timedelta(round(-number*365.2422, 0))
+    if period.upper() == 'YTD':
+        start_date = dt.date(dt.date.today().year, 1, 1)
+    return start_date
 
 
 def clean_raw_files():

@@ -46,10 +46,10 @@ def portfolio_value(endowment, weights, prices):
 tickers = pd.read_csv('ticker_lists/swedish_first_north.csv', header=None)
 tickers = tickers[0].to_list()
 tickers = [x.replace(' ', '-') + '.ST' for x in tickers]
-tickers = ['SPY', 'VOO']
-tickers = ['JYSK.CO', 'DANSKE.CO', 'RILBA.CO', 'JUTBK.CO', 'NDA-DK.CO', 'VJBA.CO',
-           'SYDB.CO', 'SPNO.CO', 'MNBA.CO', 'FYNBK.CO', 'SKJE.CO', 'LOLB.CO', 'SALB.CO', 'DJUR.CO']
-prices = yfl.download_tickers(tickers, True, return_only=['Adj Close']).dropna()
+#tickers = ['SPY', 'VOO']
+#tickers = ['JYSK.CO', 'DANSKE.CO', 'RILBA.CO', 'JUTBK.CO', 'NDA-DK.CO', 'VJBA.CO',
+#           'SYDB.CO', 'SPNO.CO', 'MNBA.CO', 'FYNBK.CO', 'SKJE.CO', 'LOLB.CO', 'SALB.CO', 'DJUR.CO']
+prices = yfl.download_tickers(tickers, False, return_only=['Adj Close'], min_period='3y').dropna()
 returns = get_returns(prices)
 
 
@@ -81,7 +81,7 @@ for stock in zip(tickers, min_var):
 
 plt.style.use('seaborn-ticks')
 plt.plot(normalized)
-#plt.yscale('log')
+plt.yscale('log')
 plt.legend(['Min var port', 'Efficient port', 'S&P500'])
 plt.gcf().text(0.05, 0.95, tickers, fontsize=8)
 plt.show()
