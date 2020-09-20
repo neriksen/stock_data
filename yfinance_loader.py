@@ -162,18 +162,19 @@ def decompress_pickle(file):
 
 
 def convert_period(date_string):
-    match = re.match(r"([0-9]+)([a-z]+)", date_string, re.I)
-    assert match, 'Period must begin with number and end with string, like 3d, 4mo and 10y'
-    items = match.groups()
-    number, period = int(items[0]), items[1]
-    assert period.upper() in ['D', 'MO', 'Y', 'YTD'], 'Period must be of form 10d, 2mo or 4y or ytd'
-    if period.upper() == 'D':
-        start_date = dt.date.today() + dt.timedelta(-number)
-    if period.upper() == 'MO':
-        start_date = dt.date.today() + monthdelta.monthdelta(-number)
-    if period.upper() == 'Y':
-        start_date = dt.date.today() + dt.timedelta(round(-number*365.2422, 0))
-    if period.upper() == 'YTD':
+    if date_string != 'YTD':
+        match = re.match(r"([0-9]+)([a-z]+)", date_string, re.I)
+        assert match, 'Period must begin with number and end with string, like 3d, 4mo and 10y'
+        items = match.groups()
+        number, period = int(items[0]), items[1]
+        assert period.upper() in ['D', 'MO', 'Y'], 'Period must be of form 10d, 2mo or 4y or ytd'
+        if period.upper() == 'D':
+            start_date = dt.date.today() + dt.timedelta(-number)
+        if period.upper() == 'MO':
+            start_date = dt.date.today() + monthdelta.monthdelta(-number)
+        if period.upper() == 'Y':
+            start_date = dt.date.today() + dt.timedelta(round(-number*365.2422, 0))
+    else:
         start_date = dt.date(dt.date.today().year, 1, 1)
     return start_date
 

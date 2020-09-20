@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import yfinance_loader as yfl
 import matplotlib.pyplot as plt
-
+import seaborn as sns
 
 def get_returns(prices):
     cleaned = pd.DataFrame(prices).dropna()
@@ -49,7 +49,8 @@ tickers = [x.replace(' ', '-') + '.ST' for x in tickers]
 #tickers = ['SPY', 'VOO']
 #tickers = ['JYSK.CO', 'DANSKE.CO', 'RILBA.CO', 'JUTBK.CO', 'NDA-DK.CO', 'VJBA.CO',
 #           'SYDB.CO', 'SPNO.CO', 'MNBA.CO', 'FYNBK.CO', 'SKJE.CO', 'LOLB.CO', 'SALB.CO', 'DJUR.CO']
-prices = yfl.download_tickers(tickers, False, return_only=['Adj Close'], min_period='3y').dropna()
+tickers = ['AAPL','TSLA', 'JPM', 'SNAP']
+prices = yfl.download_tickers(tickers, False, return_only=['Adj Close'], min_period='YTD').dropna()
 returns = get_returns(prices)
 
 
@@ -80,10 +81,12 @@ for stock in zip(tickers, min_var):
 
 
 plt.style.use('seaborn-ticks')
-plt.plot(normalized)
-plt.yscale('log')
-plt.legend(['Min var port', 'Efficient port', 'S&P500'])
-plt.gcf().text(0.05, 0.95, tickers, fontsize=8)
+fig, ax = plt.subplots(2, 1)
+ax[0].plot(normalized)
+ax[0].set_yscale('log')
+ax[0].legend(['Min var port', 'Efficient port', 'S&P500'])
+sns.distplot(efficient, ax=ax[1])
+fig.text(0.05, 0.95, tickers, fontsize=8)
 plt.show()
 
 
