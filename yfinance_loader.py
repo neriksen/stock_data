@@ -67,9 +67,9 @@ def load_stocks(tickers, **kwargs):
     if 'min_period' in kwargs:
         min_period = convert_period(kwargs['min_period'])
         tickers_to_keep = min_date_check_multiple(data, tickers, min_period)
-
-    if not tickers_to_keep:
-        raise ValueError(f'Warning: No tickers found. No data found before {min_period}. Change to something less restrictive')
+        if not tickers_to_keep:
+            raise ValueError(f'Warning: No tickers found. No data found before {min_period}'
+                             f'. Change to something less restrictive')
     data = data[tickers_to_keep]
 
     return data
@@ -84,16 +84,10 @@ def local_tickers():
 
 def ticker_needs_update(ticker):
     stock_data = decompress_pickle('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')
-
-    if bad_local_data(stock_data):
-        return False
-
     date_modified = dt.datetime.fromtimestamp(
         os.path.getmtime('/Users/nielseriksen/stock_data/raw_data/' + ticker + '.pbz2')).date()
-    if date_modified == dt.date.today():  # In case stock file has not been modified today
-        return False
 
-    if newest_date(stock_data) == last_weekday():
+    if bad_local_data(stock_data) or date_modified == dt.date.today() or newest_date(stock_data) == last_weekday():
         return False
     return True
 
@@ -131,7 +125,6 @@ def download_dump(tickers):
             compressed_pickle(ticker, clean_data) if not bad_local_data(clean_data) else not_downloaded.extend([ticker])
 
     return not_downloaded
-
 
 
 def last_weekday():
