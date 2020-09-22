@@ -21,7 +21,7 @@ def download_tickers(tickers, force_update, **kwargs):
             else:
                 tickers_to_download.append(ticker)
 
-    not_downloaded = download_dump(tickers_to_download, **kwargs)
+    not_downloaded = download_dump(tickers_to_download)
     tickers_to_load = [x for x in tickers if x not in not_downloaded]
     
     # Read stock data from file(s)
@@ -56,8 +56,7 @@ def load_stocks(tickers, **kwargs):
     else:
         cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
 
-    index = pd.MultiIndex.from_product([tickers, cols], names=['Stock ticker', 'Data type'])
-    data.columns = index
+    data = create_stock_columns(data, tickers, cols)
 
     try:
         data.index = pd.to_datetime(data.index, unit='ms')
@@ -113,27 +112,25 @@ def newest_date(stock_data):
     return date
 
 
-def download_dump(tickers, **kwargs):
+def create_stock_columns(stock_data, tickers, cols = ('Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume')):
+    index = pd.MultiIndex.from_product([tickers, cols], names=['Stock ticker', 'Data type'])
+    stock_data.columns = index
+    return stock_data
+
+
+def default_download(tickers, period='100y'):
+    return create_stock_columns(yf.download(tickers, period=period, group_by='tickers'), tickers)
+
+
+def download_dump(tickers):
     not_downloaded = []
-    start_period = convert_period(kwargs['min_period']) if 'min_period' in kwargs else dt.date.today()
     if tickers:
-        data = yf.download(tickers, period='100y', group_by='tickers')
-        if len(tickers) > 1:
-            for ticker in tickers:
-                clean_data = clean_df(data[ticker])
-                if not bad_local_data(clean_data):
-                    compressed_pickle(ticker, clean_data)
-                else:
-                    not_downloaded.extend([ticker])
-        else:
-            clean_data = clean_df(data)
-            if not bad_local_data(clean_data):
-                compressed_pickle(tickers, clean_data)
-            else:
-                not_downloaded.append(tickers)
+        data = default_download(tickers)
+        for ticker in tickers:
+            clean_data = clean_df(data[ticker])
+            compressed_pickle(ticker, clean_data) if not bad_local_data(clean_data) else not_downloaded.extend([ticker])
 
     return not_downloaded
-
 
 
 

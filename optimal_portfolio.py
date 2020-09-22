@@ -28,7 +28,7 @@ def efficient_weights(cov_matrix, mean_returns):
 
 
 def yearly_returns(prices):
-    returns = prices.asfreq('D').ffill().asfreq('AS').pct_change().dropna().mean()
+    returns = prices.asfreq('D').ffill().asfreq('AS').pct_change().dropna(how='all').mean()
     if returns.isna().sum() > 0:
         return prices.iloc[-1, :]/prices.iloc[0, :]-1
     return returns
@@ -43,20 +43,21 @@ def portfolio_value(endowment, weights, prices):
 
 #yfl.clean_raw_files()
 
-tickers = pd.read_csv('ticker_lists/swedish_first_north.csv', header=None)
-tickers = tickers[0].to_list()
-tickers = [x.replace(' ', '-') + '.ST' for x in tickers]
-#tickers = ['SPY', 'VOO']
-#tickers = ['JYSK.CO', 'DANSKE.CO', 'RILBA.CO', 'JUTBK.CO', 'NDA-DK.CO', 'VJBA.CO',
-#           'SYDB.CO', 'SPNO.CO', 'MNBA.CO', 'FYNBK.CO', 'SKJE.CO', 'LOLB.CO', 'SALB.CO', 'DJUR.CO']
-tickers = ['AAPL','TSLA', 'JPM', 'SNAP']
+#tickers = pd.read_csv('ticker_lists/c25.csv', header=None)
+#tickers = tickers[0].to_list()
+#tickers = [x.replace(' ', '-') + '.ST' for x in tickers]
+#tickers = ['VOO']
+tickers = ['JYSK.CO', 'DANSKE.CO', 'RILBA.CO', 'JUTBK.CO', 'NDA-DK.CO', 'VJBA.CO',
+           'SYDB.CO', 'SPNO.CO', 'MNBA.CO', 'FYNBK.CO', 'SKJE.CO', 'LOLB.CO', 'SALB.CO', 'DJUR.CO']
+#tickers = ['AAPL','TSLA', 'JPM', 'SNAP']
 prices = yfl.download_tickers(tickers, False, return_only=['Adj Close'], min_period='YTD').dropna()
-returns = get_returns(prices)
 
 
-cov = get_covar_matrix(returns)
+cov = get_covar_matrix(get_returns(prices))
+
 min_var = min_var_weights(cov)
 efficient = efficient_weights(cov, yearly_returns(prices))
+
 endowment = 100000
 
 portfolio_min = portfolio_value(endowment, min_var, prices)
@@ -79,11 +80,10 @@ for stock in zip(tickers, min_var):
 
 
 
-
 plt.style.use('seaborn-ticks')
 fig, ax = plt.subplots(2, 1)
 ax[0].plot(normalized)
-ax[0].set_yscale('log')
+#ax[0].set_yscale('log')
 ax[0].legend(['Min var port', 'Efficient port', 'S&P500'])
 sns.distplot(efficient, ax=ax[1])
 fig.text(0.05, 0.95, tickers, fontsize=8)
