@@ -19,7 +19,7 @@ def download_tickers(tickers, force_update, **kwargs):
     Only load stocks with at least this range of data. 
     Valid formats: 3d, 20mo, 5y
     """
-    already_downloaded = local_tickers()
+    already_downloaded = local_tickers('raw_data')
     tickers_to_download = []
     if force_update:
         tickers_to_download = tickers
@@ -85,9 +85,9 @@ def load_stocks(tickers, **kwargs):
     return data
 
 
-def local_tickers():
+def local_tickers(folder):
     tickers = [x[0:-5] if '.pbz2' in x else '' for x in
-                          os.listdir('/Users/nielseriksen/stock_data/raw_data/')]
+                          os.listdir('/Users/nielseriksen/stock_data/' + folder + '/')]
     tickers.remove('')
     return tickers
 
