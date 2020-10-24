@@ -9,6 +9,16 @@ import re
 
 
 def download_tickers(tickers, force_update, **kwargs):
+    """
+    force_update = False
+    
+    return_only = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+    Used for selecting what to return. Leave out to return everything.
+    
+    min_period = 1d
+    Only load stocks with at least this range of data. 
+    Valid formats: 3d, 20mo, 5y
+    """
     already_downloaded = local_tickers()
     tickers_to_download = []
     if force_update:

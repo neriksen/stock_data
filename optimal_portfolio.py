@@ -50,11 +50,14 @@ def monthly_returns(prices):
 #     return pd.DataFrame(value)
 
 
-def portfolio_value(endowment, weights, prices):
+def portfolio_amounts(endowment, weights, prices):
     initial_investment = endowment*weights
-    amounts = initial_investment/prices.iloc[0, :]
-    value = pd.DataFrame(amounts*prices).sum(axis=1)
-    return value
+    return initial_investment/prices.iloc[0, :]
+
+
+def portfolio_value(endowment, weights, prices):
+    amounts = portfolio_amounts(endowment, weights, prices)
+    return pd.DataFrame(amounts*prices).sum(axis=1)
 
 
 def split_prices(prices, start_window = 0, len_window = 600):
